@@ -6,6 +6,7 @@ import numpy
 
 from Bio import SeqIO
 import vcf
+import h5py
 
 class Genome(object):
 
@@ -41,7 +42,11 @@ class Genome(object):
                 self.taxonomy=GenBankFile.annotations['taxonomy']
 
             # convert and store it internally as a numpy array of single chars
-            self.bases=numpy.array(list(GenBankFileSeq.tomutable()))
+            self.bases=numpy.array(list(GenBankFileSeq.tomutable()),dtype="U1")
+
+            # print(numpy.string_("Hello"))
+
+            print(self.bases)
 
         elif fasta_file is not None:
 
@@ -180,6 +185,22 @@ class Genome(object):
             result.append((i,j,k))
 
         return(result)
+
+    def save_array(self,filename=None):
+
+        numpy.save(filename,self.bases)
+
+
+    def save_hdf5(self,filename=None):
+
+        h5f = h5py.File(filename)
+
+        array = self.bases.astype(numpy.string_)
+
+        h5f.create_dataset('genome',data=array,compression='gzip',compression_opts=4)
+
+        h5f.close()
+
 
     def save_fasta(self,filename=None,compression=None,compresslevel=2,additional_metadata=None):
 

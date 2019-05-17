@@ -10,6 +10,9 @@ logs/
 *fasta
 *fasta.gz
 *fasta.bz2
+*npy
+*hdf5
+*hdf5.gz
 
 # C extensions
 *.so

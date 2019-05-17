@@ -24,6 +24,10 @@ if __name__ == "__main__":
 
     sample.save_fasta(sample.vcf_folder+"/"+sample.name+".fasta",compression="gzip")
 
+    sample.save_array(sample.vcf_folder+"/"+sample.name+".npy")
+
+    sample.save_hdf5(sample.vcf_folder+"/"+sample.name+".hdf5")
+
     difference = reference - sample
 
     print(len(difference))
