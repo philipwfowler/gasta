@@ -2,7 +2,7 @@
 
 import logging, os, gzip, bz2
 
-import pandas, numpy
+import numpy
 
 from Bio import SeqIO
 import vcf

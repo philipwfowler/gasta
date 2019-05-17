@@ -1,15 +1,15 @@
 .DS_Store
 *.json
 *.proxy
-*effects.csv
-*mutations.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *~
 logs/
-cryptic-genetics*csv
+*fasta
+*fasta.gz
+*fasta.bz2
 
 # C extensions
 *.so
