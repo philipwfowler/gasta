@@ -10,14 +10,19 @@ import h5py
 
 class Genome(object):
 
-    def __init__(self,log_file=None,genbank_file=None,fasta_file=None):
+    def __init__(self,genbank_file=None,fasta_file=None):
 
         '''
         Instantiates a genome object by loading a VCF file and storing the whole genome as a numpy array
+
+        Args:
+            genbank_file (str): path to the GenBank file to build the reference genome
+            fasta_file (str): path to the FASTA file to build the reference genome
         '''
 
         assert ((genbank_file is not None) or (fasta_file is not None)), "one of a GenBank file or a FASTA file must be specified!"
 
+        # load the specified GenBank file
         if genbank_file is not None:
 
             # parse the supplied genbank using BioPython
@@ -26,11 +31,12 @@ class Genome(object):
             # extract the whole genome sequence (Seq object)
             GenBankFileSeq=GenBankFile.seq
 
+            # set some defaults
             self.genbank_reference=True
             self.name="Reference"
             self.additional_metadata=None
 
-            # store some of the metadata, if there
+            # store some of the metadata, if it is present
             self.id=GenBankFile.id
             if 'organism' in GenBankFile.annotations.keys():
                 self.organism=GenBankFile.annotations['organism']
@@ -44,12 +50,10 @@ class Genome(object):
             # convert and store it internally as a numpy array of single chars
             self.bases=numpy.array(list(GenBankFileSeq.tomutable()),dtype="U1")
 
-            # print(numpy.string_("Hello"))
-
-            print(self.bases)
-
+        # otherwise there must be a FASTA file so load that instead
         elif fasta_file is not None:
 
+            # check if it is compressed and load it accordingly
             if fasta_file.endswith(".gz"):
                 INPUT = gzip.open(fasta_file,'rb')
                 header=INPUT.readline().decode()
@@ -76,10 +80,9 @@ class Genome(object):
             if len(cols)>3:
                 self.additional_metadata=cols[3]
 
-
-
             self.bases=numpy.array(list(nucleotide_sequence))
 
+        # insist that bases are lower case
         self.bases=numpy.char.lower(self.bases)
 
         # store how many bases are in the genome
@@ -88,10 +91,14 @@ class Genome(object):
         # and an array of positions, counting from 1
         self.positions=numpy.arange(0,self.length,1)
 
+        # create a string of the genome from the numpy array
         self.genome_string=''.join(self.bases)
 
-
     def __repr__(self):
+
+        '''
+        Overload the print function to write a summary of the genome.
+        '''
 
         line=""
         if hasattr(self,'id'):
@@ -109,6 +116,14 @@ class Genome(object):
         return(line)
 
     def apply_vcf_file(self,filename=None):
+
+        '''
+        Load the VCF file and alter the reference genome to re-create the original genome.
+
+        Args:
+            filename (str): path to the VCF file
+
+        '''
 
         self.genbank_reference=False
 
@@ -167,9 +182,18 @@ class Genome(object):
 
                         genome_position+=1
 
+        # create a string of the genome from the numpy array
         self.genome_string=''.join(self.bases)
 
     def __sub__(self, other):
+
+        '''
+        Overload the subtraction operator so it returns a list of tuples describing the differences between the two genomes.
+
+        '''
+
+        # subtraction only makes sense if the genomes are the same species/length
+        assert self.length==other.length, "the genomes must be the same length!"
 
         # first store the array of booleans declaring where the arrays are different
         bools_array=self.bases!=other.bases
@@ -188,10 +212,23 @@ class Genome(object):
 
     def save_array(self,filename=None):
 
+        '''
+        Save the genome as a numpy array
+
+        Args:
+            filename (str): path of the output file
+        '''
+
         numpy.save(filename,self.bases)
 
-
     def save_hdf5(self,filename=None):
+
+        '''
+        Save the genome as a HDF5SUM file (compressed internally using gzip)
+
+        Args:
+            filename (str): path of the output file
+        '''
 
         h5f = h5py.File(filename)
 
@@ -201,9 +238,23 @@ class Genome(object):
 
         h5f.close()
 
-
     def save_fasta(self,filename=None,compression=None,compresslevel=2,additional_metadata=None):
 
+        '''
+        Save the genome as a FASTA file.
+
+        Args:
+            filename (str): path of the output file
+            compression (str): specify either 'gzip' or 'bzip2'. 'bzip2' is more efficient but 'gzip' is faster. Default is None.
+            compresslevel (0-9): the higher the number, the harder the algorithm tries to compress but it takes longer.
+            additional_metadata (str): will be added to the header of the FASTA file
+        '''
+
+        # check the arguments are well formed
+        assert compression in [None,'gzip','bzip2'], "compression must be one of None, gzip or bzip2"
+        assert compresslevel in range(1,10), "compresslevel must be in range 1-9"
+
+        # check the specified fileextension to see if the FASTA file needs compressing
         if compression=="gzip":
             OUTPUT=gzip.open(filename+".gz",'wb',compresslevel=compresslevel)
         elif compression=="bzip2":
@@ -211,6 +262,7 @@ class Genome(object):
         else:
             OUTPUT=open(filename,'w')
 
+        # create the header line for the FASTA file using "|" as delimiters
         header=">"
         if hasattr(self,'id'):
             header+=self.id+"|"
@@ -222,6 +274,7 @@ class Genome(object):
             header+="|" + additional_metadata
         header+="\n"
 
+        # write out the FASTA files
         if compression in ['bzip2','gzip']:
             OUTPUT.write(str.encode(header))
             OUTPUT.write(str.encode(self.genome_string))
