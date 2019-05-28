@@ -11,7 +11,6 @@ if __name__ == "__main__":
     parser.add_argument("--genbank_file",default="H37Rv.gbk",help="the genbank file of the H37Rv M. tuberculosis wildtype_gene_collection genome")
     options = parser.parse_args()
 
-
     reference=gasta.Genome(genbank_file=options.genbank_file)
 
     sample=copy.deepcopy(reference)
@@ -20,16 +19,14 @@ if __name__ == "__main__":
 
     sample.apply_vcf_file(filename=filename)
 
-    print(sample)
-
     sample.save_fasta(sample.vcf_folder+"/"+sample.name+".fasta",compression="gzip")
 
-    sample.save_array(sample.vcf_folder+"/"+sample.name+".npy")
+    # sample.save_array(sample.vcf_folder+"/"+sample.name+".npy")
 
-    sample.save_hdf5(sample.vcf_folder+"/"+sample.name+".hdf5")
+    # sample.save_hdf5(sample.vcf_folder+"/"+sample.name+".hdf5")
 
-    difference = reference - sample
-
-    print(len(difference))
-
-    print(difference[:10])
+    # difference = reference - sample
+    #
+    # print(len(difference))
+    #
+    # print(difference[:10])
