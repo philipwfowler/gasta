@@ -2,7 +2,7 @@
 
 import copy, numpy, argparse
 
-import gasta
+import vasta
 
 if __name__ == "__main__":
 
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("--genbank_file",default="H37Rv.gbk",help="the genbank file of the H37Rv M. tuberculosis wildtype_gene_collection genome")
     options = parser.parse_args()
 
-    reference=gasta.Genome(genbank_file=options.genbank_file)
+    reference=vasta.Genome(genbank_file=options.genbank_file)
 
     sample=copy.deepcopy(reference)
 

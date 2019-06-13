@@ -7,9 +7,11 @@ import numpy
 from Bio import SeqIO
 import vcf
 import h5py
+from numba import jit
 
 class Genome(object):
 
+    @jit(nopython=False)
     def __init__(self,genbank_file=None,fasta_file=None):
 
         '''
@@ -115,6 +117,7 @@ class Genome(object):
         line+=self.genome_string[:10]+"...."+self.genome_string[-10:]+"\n"
         return(line)
 
+    # @jit(nopython=False)
     def apply_vcf_file(self,filename=None):
 
         '''
@@ -163,6 +166,7 @@ class Genome(object):
             # gbk_bases=''.join(reference_genome[genome_position-1:genome_position-1+length_of_variant])
             # assert ref_bases==gbk_bases
 
+            # homozygous variants
             if row.gt_type==2:
 
                 # find out which is the most likely allele in the list
@@ -182,8 +186,32 @@ class Genome(object):
 
                         genome_position+=1
 
+            # het calls
+            elif row.gt_type==1:
+
+                self.bases[genome_position]='n'
+
+                genome_position+=1
+
+            # null calls
+            elif row['GT']=='./.':
+
+                self.bases[genome_position]='-'
+
+                genome_position+=1
+
         # create a string of the genome from the numpy array
         self.genome_string=''.join(self.bases)
+
+    @jit(nopython=True)
+    def _calculate_difference(ref,alt,pos):
+
+        result=[]
+        for (i,j,k) in zip(pos,ref,alt):
+            result.append((i,j,k))
+
+        return(result)
+
 
     def __sub__(self, other):
 
@@ -193,7 +221,7 @@ class Genome(object):
         '''
 
         # subtraction only makes sense if the genomes are the same species/length
-        assert self.length==other.length, "the genomes must be the same length!"
+        # assert self.length==other.length, "the genomes must be the same length!"
 
         # first store the array of booleans declaring where the arrays are different
         bools_array=self.bases!=other.bases
@@ -204,11 +232,10 @@ class Genome(object):
 
         pos_array=self.positions[bools_array]
 
-        result=[]
-        for (i,j,k) in zip(pos_array,ref_array,alt_array):
-            result.append((i,j,k))
+        result=self._calculate_difference(ref_array,alt_array,pos_array)
 
         return(result)
+
 
     def save_array(self,filename=None):
 
