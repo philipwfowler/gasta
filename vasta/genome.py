@@ -265,7 +265,22 @@ class Genome(object):
 
         h5f.close()
 
-    def save_fasta(self,filename=None,compression=None,compresslevel=2,additional_metadata=None):
+    def _insert_newlines(self, string, every=70):
+        '''
+        Short private method for inserting a carriage return every N characters.
+
+        Args:
+            string (str): the string to insert carriage returns
+            every (int): how many characters between each carriage return
+        '''
+
+        assert every>0, "every must be an integer greater than zero"
+
+        assert len(string)>1, "string is too short!"
+
+        return '\n'.join(string[i:i+every] for i in range(0, len(string), every))
+
+    def save_fasta(self,filename=None,compression=None,compresslevel=2,additional_metadata=None,chars_per_line=70,nucleotides_uppercase=True):
 
         '''
         Save the genome as a FASTA file.
@@ -275,11 +290,14 @@ class Genome(object):
             compression (str): specify either 'gzip' or 'bzip2'. 'bzip2' is more efficient but 'gzip' is faster. Default is None.
             compresslevel (0-9): the higher the number, the harder the algorithm tries to compress but it takes longer.
             additional_metadata (str): will be added to the header of the FASTA file
+            chars_per_line (int): the number of characters per line. Default=70. Must be either a positive integer or None (i.e. no CRs)
         '''
 
         # check the arguments are well formed
-        assert compression in [None,'gzip','bzip2'], "compression must be one of None, gzip or bzip2"
-        assert compresslevel in range(1,10), "compresslevel must be in range 1-9"
+        assert compression in [None,'gzip','bzip2'], "compression must be one of None, gzip or bzip2!"
+        assert compresslevel in range(1,10), "compresslevel must be in range 1-9!"
+        if chars_per_line is not None:
+            assert chars_per_line > 0, "number of characters per line in the FASTA file must be an integer!"
 
         # check the specified fileextension to see if the FASTA file needs compressing
         if compression=="gzip":
@@ -301,12 +319,19 @@ class Genome(object):
             header+="|" + additional_metadata
         header+="\n"
 
+        output_string=self._insert_newlines(self.genome_string,every=chars_per_line)
+        output_string+="\n"
+        if nucleotides_uppercase:
+            output_string=output_string.upper()
+        else:
+            output_string=output_string.lower()
+
         # write out the FASTA files
         if compression in ['bzip2','gzip']:
             OUTPUT.write(str.encode(header))
-            OUTPUT.write(str.encode(self.genome_string))
+            OUTPUT.write(str.encode(output_string))
         else:
             OUTPUT.write(header)
-            OUTPUT.write(self.genome_string)
+            OUTPUT.write(output_string)
 
         OUTPUT.close()
